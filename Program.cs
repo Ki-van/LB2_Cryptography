@@ -1,4 +1,5 @@
 ﻿using System;
+using LB2_Cryptography;
 
 namespace LB2_Cryptography
 {
@@ -6,7 +7,8 @@ namespace LB2_Cryptography
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+           int num =  Crypto.EncodeHedgeCipher("in.txt", 4, 0);
+            Console.WriteLine(num);
         }
     }
 }
