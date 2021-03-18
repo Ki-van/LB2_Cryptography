@@ -12,6 +12,79 @@ namespace LB2_Cryptography
         private static string alphabet = "абвгдеёжзийклмнопрстуфхцчшщъьыэюя_,.АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЭЮЯ";
         private static int m = alphabet.Length;
 
+        public static bool EncodeKeyTranspositionCipher(string path, int blockLen, int[] key)
+        {
+            if (blockLen > 0)
+            {
+                int keyLen = 0;
+                for (int i = 1; i <= blockLen; i++)
+                {
+                    if (key.Contains(i))
+                        keyLen++;
+                    else
+                        return false;
+                }
+
+                if (keyLen != key.Length)
+                    return false;
+            }
+            else
+                return false;
+
+            StreamReader input = new StreamReader(path, Encoding.UTF8);
+            StreamWriter output = new StreamWriter("encoded.txt", false, Encoding.UTF8);
+
+            string sourceLine, sourceText = "";
+            while ((sourceLine = input.ReadLine()) != null)
+                sourceText += sourceLine ?? "";
+
+            string sourceBlock = "", outputBlock;
+            int sourceBlockI = 0;
+            for(int i = 0; i < sourceText.Length; i++)
+            {
+                if(sourceBlockI < blockLen)
+                {
+                    if (alphabet.Contains(sourceText[i]))
+                    {
+                        sourceBlock += sourceText[i];
+                        sourceBlockI++;
+                    }
+                } else
+                {
+                    outputBlock = "";
+                    for(int j = 0; j < blockLen; j++)
+                    {
+                        outputBlock += sourceBlock[key[j] - 1];
+                    }
+
+                    output.Write(outputBlock);
+
+                    sourceBlockI = 0;
+                    sourceBlock = "";
+                }
+            }
+
+            if(sourceBlockI < blockLen)
+            {
+                for (; sourceBlockI < blockLen; sourceBlockI++)
+                {
+                    sourceBlock += ".";
+                }
+            } 
+
+            outputBlock = "";
+            for (int j = 0; j < blockLen; j++)
+            {
+                outputBlock += sourceBlock[key[j] - 1];
+            }
+            output.Write(outputBlock);
+
+            input.Close();
+            output.Close();
+
+            return true;
+        }
+
         public static bool DecodeRailFenceCipher(string path, int columnNumber)
         {
             StreamReader input = new StreamReader(path, Encoding.UTF8);
@@ -105,7 +178,7 @@ namespace LB2_Cryptography
                         outputLine += strings.ElementAt(j)[i];
                 }
 
-                output.WriteLine(outputLine);
+                output.Write(outputLine);
             }
 
             input.Close();
