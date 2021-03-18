@@ -12,18 +12,39 @@ namespace LB2_Cryptography
         private static string alphabet = "абвгдеёжзийклмнопрстуфхцчшщъьыэюя_,.АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЭЮЯ";
        //
        //private static int m = alphabet.Length;
-       
-
-        public static bool CryptKeyTranspositionCipher(string path, int blockLen, int[] key)
+        private static List<char []> ToTableLineByLine(string path, int columnNumber)
         {
-            return KeyTranspositionCipher(path, "crypted.txt", blockLen, key);
+            StreamReader input = new StreamReader(path, Encoding.UTF8);
+            string sourceLine;
+
+            List<char[]> strings = new List<char[]>();
+            int stringsI = 0;
+            strings.Add(new char[columnNumber]);
+
+            int stringSymbolsI = 0;
+            while ((sourceLine = input.ReadLine()) != null)
+            {
+                for (int i = 0; i < sourceLine.Length; i++)
+                {
+                    if (alphabet.Contains(sourceLine[i]))
+                    {
+                        if (stringSymbolsI == columnNumber)
+                        {
+                            stringSymbolsI = 0;
+                            strings.Add(new char[columnNumber]);
+                            stringsI++;
+                        }
+
+                        strings.ElementAt(stringsI)[stringSymbolsI] = sourceLine[i];
+                        stringSymbolsI++;
+                    }
+                }
+            }
+
+            return strings;
         }
 
-        public static bool DecryptKeyTranspositionCipher(string path, int blockLen, int[] key)
-        {
-            return KeyTranspositionCipher(path, "decrypted.txt", blockLen, key);
-        }
-        private static bool KeyTranspositionCipher(string path, string outputPath, int blockLen, int[] key)
+        private static bool CheckBlockTranspositionCipherKey(int blockLen, int [] key)
         {
             if (blockLen > 0)
             {
@@ -40,6 +61,106 @@ namespace LB2_Cryptography
                     return false;
             }
             else
+                return false;
+
+            return true;
+        }
+
+        public static bool DecryptColumnarTranspositionCipher(string path, int columnNumber, int[] key)
+        {
+            if (!Crypto.CheckBlockTranspositionCipherKey(columnNumber, key))
+                return false;
+
+            StreamReader input = new StreamReader(path, Encoding.UTF8);
+            StreamWriter output = new StreamWriter("decrypted.txt", false, Encoding.UTF8);
+
+            string sourceLine;
+            int stringNumber;
+
+            double textLenght = Crypto.GetFileLenghtInLetters(path);
+            int lastString = (int)textLenght % columnNumber;
+            if (lastString == 0)
+                lastString = columnNumber;
+
+            char[,] strings = new char[(int)Math.Ceiling(textLenght / columnNumber), columnNumber];
+            stringNumber = strings.Length / columnNumber;
+
+            int stringsI = 0, stringSymbolsI, keyI = 0;
+            stringSymbolsI = key[keyI] - 1;
+            while ((sourceLine = input.ReadLine()) != null)
+            {
+                for (int i = 0; i < sourceLine.Length; i++)
+                {
+                    if (stringsI == stringNumber
+                        || ((stringsI == stringNumber - 1) && (stringSymbolsI > lastString - 1)))
+                    {
+                        stringsI = 0;
+                        keyI++;
+                        stringSymbolsI = key[keyI] - 1;
+                    }
+
+                    strings[stringsI, stringSymbolsI] = sourceLine[i];
+                    stringsI++;
+                }
+            }
+
+            string outputLine;
+            for (int i = 0; i < stringNumber; i++)
+            {
+                outputLine = "";
+                for (int j = 0; j < columnNumber; j++)
+                {
+                    if (strings[i, j] != '\0')
+                        outputLine += strings[i, j];
+                }
+
+                output.WriteLine(outputLine);
+            }
+
+            input.Close();
+            output.Close();
+
+            return true;
+        }
+        public static bool CryptColumnarTranspositionCipher(string path, int columnNumber, int[] key)
+        {
+            if (!Crypto.CheckBlockTranspositionCipherKey(columnNumber, key))
+                return false;
+
+            StreamWriter output = new StreamWriter("crypted.txt", false, Encoding.UTF8);
+            List<char[]> strings = Crypto.ToTableLineByLine(path, columnNumber);
+
+            string outputLine;
+            for (int i = 0; i < columnNumber; i++)
+            {
+                outputLine = "";
+                for (int j = 0; j < strings.Count; j++)
+                {
+                    if (strings.ElementAt(j)[key[i] - 1] != '\0')
+                        outputLine += strings.ElementAt(j)[key[i] - 1];
+                }
+
+                output.Write(outputLine);
+            }
+
+            output.Close();
+
+            return true;
+        }
+
+        public static bool CryptKeyTranspositionCipher(string path, int blockLen, int[] key)
+        {
+            return KeyTranspositionCipher(path, "crypted.txt", blockLen, key);
+        }
+
+        public static bool DecryptKeyTranspositionCipher(string path, int blockLen, int[] key)
+        {
+            return KeyTranspositionCipher(path, "decrypted.txt", blockLen, key);
+        }
+        private static bool KeyTranspositionCipher(string path, string outputPath, int blockLen, int[] key)
+        {
+
+            if (!Crypto.CheckBlockTranspositionCipherKey(blockLen, key))
                 return false;
 
             StreamReader input = new StreamReader(path, Encoding.UTF8);
@@ -149,36 +270,10 @@ namespace LB2_Cryptography
             return true;
         }
 
-        public static bool EncodeRailFenceCipher(string path, int columnNumber)
+        public static bool EncryptRailFenceCipher(string path, int columnNumber)
         {
-            StreamReader input = new StreamReader(path, Encoding.UTF8);
-            StreamWriter output = new StreamWriter("encoded.txt", false, Encoding.UTF8);
-
-            string sourceLine;
-
-            List<char[]> strings = new List<char[]>();
-            int stringsI = 0;
-            strings.Add(new char[columnNumber]);
-
-            int stringSymbolsI = 0;
-            while ((sourceLine = input.ReadLine()) != null)
-            {
-                for (int i = 0; i < sourceLine.Length; i++)
-                {
-                    if (alphabet.Contains(sourceLine[i]))
-                    {
-                        if (stringSymbolsI == columnNumber)
-                        {
-                            stringSymbolsI = 0;
-                            strings.Add(new char[columnNumber]);
-                            stringsI++;
-                        }
-
-                        strings.ElementAt(stringsI)[stringSymbolsI] = sourceLine[i];
-                        stringSymbolsI++;
-                    }
-                }
-            }
+            StreamWriter output = new StreamWriter("crypted.txt", false, Encoding.UTF8);
+            List<char[]> strings = Crypto.ToTableLineByLine(path, columnNumber);
 
             string outputLine;
             for (int i = 0; i < columnNumber; i++)
@@ -193,11 +288,8 @@ namespace LB2_Cryptography
                 output.Write(outputLine);
             }
 
-            input.Close();
             output.Close();
-
             return true;
-
         }
 
         public static int GetFileLenghtInLetters(string path)
