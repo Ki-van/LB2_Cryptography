@@ -10,9 +10,20 @@ namespace LB2_Cryptography
     class Crypto
     {
         private static string alphabet = "абвгдеёжзийклмнопрстуфхцчшщъьыэюя_,.АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЭЮЯ";
-        private static int m = alphabet.Length;
+       //
+       //private static int m = alphabet.Length;
+       
 
-        public static bool EncodeKeyTranspositionCipher(string path, int blockLen, int[] key)
+        public static bool CryptKeyTranspositionCipher(string path, int blockLen, int[] key)
+        {
+            return KeyTranspositionCipher(path, "crypted.txt", blockLen, key);
+        }
+
+        public static bool DecryptKeyTranspositionCipher(string path, int blockLen, int[] key)
+        {
+            return KeyTranspositionCipher(path, "decrypted.txt", blockLen, key);
+        }
+        private static bool KeyTranspositionCipher(string path, string outputPath, int blockLen, int[] key)
         {
             if (blockLen > 0)
             {
@@ -32,7 +43,7 @@ namespace LB2_Cryptography
                 return false;
 
             StreamReader input = new StreamReader(path, Encoding.UTF8);
-            StreamWriter output = new StreamWriter("encoded.txt", false, Encoding.UTF8);
+            StreamWriter output = new StreamWriter(outputPath, false, Encoding.UTF8);
 
             string sourceLine, sourceText = "";
             while ((sourceLine = input.ReadLine()) != null)
@@ -61,6 +72,7 @@ namespace LB2_Cryptography
 
                     sourceBlockI = 0;
                     sourceBlock = "";
+                    i--;
                 }
             }
 
@@ -85,10 +97,10 @@ namespace LB2_Cryptography
             return true;
         }
 
-        public static bool DecodeRailFenceCipher(string path, int columnNumber)
+        public static bool DecryptRailFenceCipher(string path, int columnNumber)
         {
             StreamReader input = new StreamReader(path, Encoding.UTF8);
-            StreamWriter output = new StreamWriter("decoded.txt", false, Encoding.UTF8);
+            StreamWriter output = new StreamWriter("decrypted.txt", false, Encoding.UTF8);
 
             string sourceLine;
             int stringNumber;
