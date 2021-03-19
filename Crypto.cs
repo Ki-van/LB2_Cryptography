@@ -44,6 +44,46 @@ namespace LB2_Cryptography
             return strings;
         }
 
+        private static char[,] ToTableColumnByColumn(string path, int columnNumber, int[] order)
+        {
+            if (!Crypto.CheckBlockTranspositionCipherKey(columnNumber, order))
+                return null;
+
+            StreamReader input = new StreamReader(path, Encoding.UTF8);
+
+            string sourceLine;
+            int stringNumber;
+
+            double textLenght = Crypto.GetFileLenghtInLetters(path);
+            int lastString = (int)textLenght % columnNumber;
+            if (lastString == 0)
+                lastString = columnNumber;
+
+            char[,] strings = new char[(int)Math.Ceiling(textLenght / columnNumber), columnNumber];
+            stringNumber = strings.Length / columnNumber;
+
+            int stringsI = 0, stringSymbolsI, keyI = 0;
+            stringSymbolsI = order[keyI] - 1;
+            while ((sourceLine = input.ReadLine()) != null)
+            {
+                for (int i = 0; i < sourceLine.Length; i++)
+                {
+                    if (stringsI == stringNumber
+                        || ((stringsI == stringNumber - 1) && (stringSymbolsI > lastString - 1)))
+                    {
+                        stringsI = 0;
+                        keyI++;
+                        stringSymbolsI = order[keyI] - 1;
+                    }
+
+                    strings[stringsI, stringSymbolsI] = sourceLine[i];
+                    stringsI++;
+                }
+            }
+
+            return strings;
+        }
+
         private static bool CheckBlockTranspositionCipherKey(int blockLen, int [] key)
         {
             if (blockLen > 0)
@@ -71,38 +111,13 @@ namespace LB2_Cryptography
             if (!Crypto.CheckBlockTranspositionCipherKey(columnNumber, key))
                 return false;
 
-            StreamReader input = new StreamReader(path, Encoding.UTF8);
             StreamWriter output = new StreamWriter("decrypted.txt", false, Encoding.UTF8);
 
-            string sourceLine;
-            int stringNumber;
+            char[,]? strings = Crypto.ToTableColumnByColumn(path, columnNumber, key);
+            if (strings == null)
+                return false;
 
-            double textLenght = Crypto.GetFileLenghtInLetters(path);
-            int lastString = (int)textLenght % columnNumber;
-            if (lastString == 0)
-                lastString = columnNumber;
-
-            char[,] strings = new char[(int)Math.Ceiling(textLenght / columnNumber), columnNumber];
-            stringNumber = strings.Length / columnNumber;
-
-            int stringsI = 0, stringSymbolsI, keyI = 0;
-            stringSymbolsI = key[keyI] - 1;
-            while ((sourceLine = input.ReadLine()) != null)
-            {
-                for (int i = 0; i < sourceLine.Length; i++)
-                {
-                    if (stringsI == stringNumber
-                        || ((stringsI == stringNumber - 1) && (stringSymbolsI > lastString - 1)))
-                    {
-                        stringsI = 0;
-                        keyI++;
-                        stringSymbolsI = key[keyI] - 1;
-                    }
-
-                    strings[stringsI, stringSymbolsI] = sourceLine[i];
-                    stringsI++;
-                }
-            }
+            int stringNumber = strings.Length / columnNumber;
 
             string outputLine;
             for (int i = 0; i < stringNumber; i++)
@@ -117,9 +132,7 @@ namespace LB2_Cryptography
                 output.WriteLine(outputLine);
             }
 
-            input.Close();
             output.Close();
-
             return true;
         }
         public static bool CryptColumnarTranspositionCipher(string path, int columnNumber, int[] key)
@@ -220,36 +233,17 @@ namespace LB2_Cryptography
 
         public static bool DecryptRailFenceCipher(string path, int columnNumber)
         {
-            StreamReader input = new StreamReader(path, Encoding.UTF8);
             StreamWriter output = new StreamWriter("decrypted.txt", false, Encoding.UTF8);
 
-            string sourceLine;
-            int stringNumber;
+            int[] order = new int[columnNumber];
+            for (int i = 1; i <= order.Length; i++)
+                order[i - 1] = i;
 
-            double textLenght = Crypto.GetFileLenghtInLetters(path);
-            int lastString = (int)textLenght % columnNumber;
-            if (lastString == 0)
-                lastString = columnNumber;
-
-            char[,] strings = new char[(int)Math.Ceiling(textLenght / columnNumber), columnNumber];
-            stringNumber = strings.Length / columnNumber;
-
-            int stringsI = 0, stringSymbolsI = 0;
-            while ((sourceLine = input.ReadLine()) != null)
-            {
-                for (int i = 0; i < sourceLine.Length; i++)
-                {
-                    if (stringsI == stringNumber
-                        || ((stringsI == stringNumber - 1) && (stringSymbolsI > lastString - 1)))
-                    {
-                        stringsI = 0;
-                        stringSymbolsI++;
-                    }
-
-                    strings[stringsI, stringSymbolsI] = sourceLine[i];
-                    stringsI++;
-                }
-            }
+            char[,]? strings = Crypto.ToTableColumnByColumn(path, columnNumber, order);
+            if (strings == null)
+                return false;
+            
+            int stringNumber = strings.Length / columnNumber;
 
             string outputLine;
             for (int i = 0; i < stringNumber; i++)
@@ -264,9 +258,7 @@ namespace LB2_Cryptography
                 output.WriteLine(outputLine);
             }
 
-            input.Close();
             output.Close();
-
             return true;
         }
 
