@@ -9,7 +9,7 @@ namespace LB2_Cryptography
 {
     class Crypto
     {
-        private static string alphabet = "абвгдеёжзийклмнопрстуфхцчшщъьыэюя_,.АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЭЮЯ";
+        private static string alphabet = "абвгдеёжзийклмнопрстуфхцчшщъьыэюя_,.АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЭЮЯ ";
        //
        //private static int m = alphabet.Length;
         private static List<char []> ToTableLineByLine(string path, int columnNumber)
@@ -40,6 +40,8 @@ namespace LB2_Cryptography
                     }
                 }
             }
+
+            input.Close();
 
             return strings;
         }
@@ -81,6 +83,8 @@ namespace LB2_Cryptography
                 }
             }
 
+            input.Close();
+
             return strings;
         }
 
@@ -106,17 +110,45 @@ namespace LB2_Cryptography
             return true;
         }
 
-        public static bool DecryptColumnarTranspositionCipher(string path, int columnNumber, int[] key)
+        public static bool EncryptDoubleTanspositionCipher(string path, int columnNumber, int[] key)
+        {
+            bool result = true;
+            result = result && Crypto.EncryptColumnarTranspositionCipher(path, columnNumber, key, "tmp.txt");
+            result = result && Crypto.EncryptColumnarTranspositionCipher("tmp.txt", columnNumber, key);
+
+            FileInfo fTmp = new FileInfo("tmp.txt");
+            fTmp.Delete();
+            return result;
+        }
+
+        public static bool DecryptDoubleTanspositionCipher(string path, int columnNumber, int[] key)
+        {
+            bool result = true;
+            result = result && Crypto.DecryptColumnarTranspositionCipher(path, columnNumber, key, "tmp.txt");
+            result = result && Crypto.DecryptColumnarTranspositionCipher("tmp.txt", columnNumber, key);
+
+            FileInfo fTmp = new FileInfo("tmp.txt");
+          //  fTmp.Delete();
+
+            return result;
+        }
+
+        public static bool DecryptColumnarTranspositionCipher(string path, int columnNumber, int[] key, string outputPath = null)
         {
             if (!Crypto.CheckBlockTranspositionCipherKey(columnNumber, key))
                 return false;
 
-            StreamWriter output = new StreamWriter("decrypted.txt", false, Encoding.UTF8);
+            if (outputPath == null)
+                outputPath = "decrypted.txt";
+
+            StreamWriter output = new StreamWriter(outputPath, false, Encoding.UTF8);
 
             char[,]? strings = Crypto.ToTableColumnByColumn(path, columnNumber, key);
             if (strings == null)
+            {
+                output.Close();
                 return false;
-
+            }
             int stringNumber = strings.Length / columnNumber;
 
             string outputLine;
@@ -135,12 +167,16 @@ namespace LB2_Cryptography
             output.Close();
             return true;
         }
-        public static bool CryptColumnarTranspositionCipher(string path, int columnNumber, int[] key)
+        public static bool EncryptColumnarTranspositionCipher(string path, int columnNumber, 
+            int[] key, string outputPath = null)
         {
             if (!Crypto.CheckBlockTranspositionCipherKey(columnNumber, key))
                 return false;
 
-            StreamWriter output = new StreamWriter("crypted.txt", false, Encoding.UTF8);
+            if (outputPath == null)
+                outputPath = "crypted.txt";
+            StreamWriter output = new StreamWriter(outputPath, false, Encoding.UTF8);
+
             List<char[]> strings = Crypto.ToTableLineByLine(path, columnNumber);
 
             string outputLine;
