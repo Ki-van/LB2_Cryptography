@@ -110,7 +110,7 @@ namespace LB2_Cryptography
             return true;
         }
 
-        private static string[] toWords(string path)
+        private static string[] ToWords(string path)
         {
             int wordCount = 0;
             StreamReader input = new StreamReader(path, Encoding.UTF8);
@@ -157,17 +157,97 @@ namespace LB2_Cryptography
             input.Close();
             return inputLine.Length;
         }
-        public static int[] HackColumnarTranspositionCipher(string path, double match = 0.7, 
-            string outputPath = "decrypted.txt")
+
+        private static (bool, int) BinarySearch<T>(T[] sorted_values, string value, bool descending = false) where T : IComparable
         {
-            int[] key = { 1, 2};
+            int left = 0;
+            for (int right = sorted_values.Length, middle; left < right;)
+            {
+                if (sorted_values[left].CompareTo(value) == 0)
+                    return (true, left);
+                middle = left + (right - left) / 2;
+                var c = sorted_values[middle].CompareTo(value);
+                if (c == 0)
+                {
+                    if (middle == left + 1)
+                        return (true, middle);
+                    right = middle + 1;
+                }
+                if ((c < 0) == descending)
+                    right = middle;
+                else
+                    left = middle + 1;
+            }
+            return (false, left);
+        }
+
+        public static int[] HackColumnarTranspositionCipher(string path, string dictionaryPath, double match = 0.7, 
+            string outputPath = "decrypted.txt", int maxKeyLen = 50)
+        {
+            bool compare(int val_1, int val_2)
+            {
+                if (val_1 > val_2)
+                    return true;
+                else
+                    return false;
+            }
+            
+            int[] key = null;
             try
             {
-                StreamWriter input = new StreamWriter(path, false, Encoding.UTF8);
-                string[] dictionary = toWords("russian.txt");
+                StreamReader decrypted = new StreamReader(outputPath, Encoding.UTF8);
+                string[] dictionary = ToWords(dictionaryPath);
+                for (int keyLen = 2; keyLen <= maxKeyLen; keyLen++)
+                {
+                    key = new int[keyLen];
+                    for (int i = 0; i < keyLen; i++)
+                        key[i] = i + 1;
+                    do
+                    {
+                        Crypto.DecryptColumnarTranspositionCipher(path, keyLen, key);
+                        decrypted.BaseStream.Position = 0;
+                        
+                        string decryptedLine, word = "";
+                        double actualMatch = 0, wordCount = 0;
+                        while((decryptedLine = decrypted.ReadLine()) != null)
+                        {
+                            decryptedLine = decryptedLine.Trim();
+                            for(int i = 0; i < decryptedLine.Length; i++)
+                            {
+                                while (decryptedLine[i] != ' ' && i < decryptedLine.Length)
+                                {
+                                    word += decryptedLine[i];
+                                    i++;
+                                }
+                                i++;
+                                wordCount++;
+                                if (BinarySearch<string>(dictionary, word).Item1)
+                                    actualMatch++;
 
-            
-            
+                            }
+                        }
+                        actualMatch = wordCount / actualMatch;
+
+                        if (actualMatch >= match)
+                        {
+                            Console.WriteLine("Key:");
+                            for (int i = 0; i < key.Length; i++)
+                                Console.Write(key[i] + " ");
+                            Console.WriteLine("Press 'y' to continue");
+                            char c = (char)Console.Read();
+
+                            if (c != 'y')
+                                break;
+                            else
+                                Console.WriteLine("Key found, check decrypted.txt");
+                        }
+                        else
+                            actualMatch = 0;
+                        
+                    } while (Narayana.NextPermutation<int>(key, compare));
+                    
+                }
+                Console.WriteLine("Faild to find a key");
             }catch(Exception e)
             {
                 Console.WriteLine(e.Message);
