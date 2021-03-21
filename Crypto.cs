@@ -110,6 +110,72 @@ namespace LB2_Cryptography
             return true;
         }
 
+        private static string[] toWords(string path)
+        {
+            int wordCount = 0;
+            StreamReader input = new StreamReader(path, Encoding.UTF8);
+            Stream inputBase = input.BaseStream;
+            inputBase.Position = 0;
+            string line;
+            while ((line = input.ReadLine()) != null)
+            {
+                line = line.Trim();
+                if (line.Length > 0) 
+                {
+                    for (int i = 0; i < line.Length; i++)
+                    {
+                        if (line[i] == ' ')
+                            wordCount++;
+                    }
+                    wordCount++;
+                }
+            }
+            inputBase.Position = 0;
+
+            string[] words = new string[wordCount];
+            for(int i = 0; i < words.Length; i++)
+            {
+                line = input.ReadLine().Trim();
+                
+                for(int j = 0; j < line.Length; j++)
+                {
+                    if (line[j] != ' ')
+                        words[i] += line[j];
+                    else
+                        i++;
+                }
+            }
+            input.Close();
+
+            return words;
+        }   
+
+        public static int GetFileLenghtInLetters(string path)
+        {
+            StreamReader input = new StreamReader(path, Encoding.UTF8);
+            string inputLine = input.ReadToEnd();
+            input.Close();
+            return inputLine.Length;
+        }
+        public static int[] HackColumnarTranspositionCipher(string path, double match = 0.7, 
+            string outputPath = "decrypted.txt")
+        {
+            int[] key = { 1, 2};
+            try
+            {
+                StreamWriter input = new StreamWriter(path, false, Encoding.UTF8);
+                string[] dictionary = toWords("russian.txt");
+
+            
+            
+            }catch(Exception e)
+            {
+                Console.WriteLine(e.Message);
+                return null;
+            }
+            return key;
+        }
+
         public static bool EncryptDoubleTanspositionCipher(string path, int columnNumber, int[] key)
         {
             bool result = true;
@@ -133,13 +199,11 @@ namespace LB2_Cryptography
             return result;
         }
 
-        public static bool DecryptColumnarTranspositionCipher(string path, int columnNumber, int[] key, string outputPath = null)
+        public static bool DecryptColumnarTranspositionCipher(string path, int columnNumber, int[] key,
+            string outputPath = "decrypted.txt")
         {
             if (!Crypto.CheckBlockTranspositionCipherKey(columnNumber, key))
                 return false;
-
-            if (outputPath == null)
-                outputPath = "decrypted.txt";
 
             StreamWriter output = new StreamWriter(outputPath, false, Encoding.UTF8);
 
@@ -318,18 +382,6 @@ namespace LB2_Cryptography
 
             output.Close();
             return true;
-        }
-
-        public static int GetFileLenghtInLetters(string path)
-        {
-            int lenght = 0;
-            StreamReader input = new StreamReader(path, Encoding.UTF8);
-
-            string inputLine;
-            while ((inputLine = input.ReadLine()) != null)
-                lenght += inputLine.Length;
-
-            return lenght;
         }
     }
 }
