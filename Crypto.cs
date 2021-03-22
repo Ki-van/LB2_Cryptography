@@ -181,7 +181,7 @@ namespace LB2_Cryptography
             return (false, left);
         }
 
-        public static int[] HackColumnarTranspositionCipher(string path, string dictionaryPath, double match = 0.7,
+        public static int[] HackColumnarTranspositionCipher(string path, string dictionaryPath, double match = 0.4,
             string outputPath = "decrypted.txt", int maxKeyLen = 50)
         {
             bool compare(int val_1, int val_2)
@@ -196,6 +196,8 @@ namespace LB2_Cryptography
 
             StreamReader decrypted;
             string[] dictionary = ToWords(dictionaryPath);
+            
+
             for (int keyLen = 2; keyLen <= maxKeyLen; keyLen++)
             {
                 key = new int[keyLen];
@@ -204,14 +206,14 @@ namespace LB2_Cryptography
 
                 do
                 {
-                    Console.Write("Check key: ");
+                    Console.Write("Checking key: ");
                     for (int i = 0; i < key.Length; i++)
                         Console.Write(key[i] + " ");
                     Console.WriteLine();
 
                     Crypto.DecryptColumnarTranspositionCipher(path, keyLen, key);
 
-                    string decryptedLine, word = "";
+                    string decryptedLine, word;
                     double actualMatch = 0, wordCount = 0;
                     decrypted = new StreamReader(outputPath, Encoding.UTF8);
                     while ((decryptedLine = decrypted.ReadLine()) != null)
@@ -219,12 +221,12 @@ namespace LB2_Cryptography
                         decryptedLine = decryptedLine.Trim().ToLowerInvariant();
                         for (int i = 0; i < decryptedLine.Length; i++)
                         {
+                            word = "";
                             while (i < decryptedLine.Length && decryptedLine[i] != ' ')
                             {
                                 word += decryptedLine[i];
                                 i++;
                             }
-                            i++;
                             wordCount++;
                             if (BinarySearch<string>(dictionary, word).Item1)
                                 actualMatch++;
@@ -240,12 +242,15 @@ namespace LB2_Cryptography
                         for (int i = 0; i < key.Length; i++)
                             Console.Write(key[i] + " ");
                         Console.WriteLine("Press 'y' to continue");
-                        char c = (char)Console.Read();
-
-                        if (c != 'y')
-                            break;
+                        
+                        if (Console.ReadKey().KeyChar != 'y')
+                        {
+                            Console.WriteLine("\nKey found, check decrypted.txt");
+                            return key;
+                        }
                         else
-                            Console.WriteLine("Key found, check decrypted.txt");
+                            Console.WriteLine("\nContinue...");
+                            
                     }
                     else
                         actualMatch = 0;
@@ -255,7 +260,7 @@ namespace LB2_Cryptography
             }
             Console.WriteLine("Faild to find a key");
 
-            return key;
+            return null;
         }
 
         public static bool EncryptDoubleTanspositionCipher(string path, int columnNumber, int[] key)
