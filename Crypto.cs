@@ -10,7 +10,8 @@ namespace LB2_Cryptography
     class Crypto
     {
         private static string alphabet = "абвгдеёжзийклмнопрстуфхцчшщъьыэюя_,.АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЭЮЯ ";
-        //
+        public delegate bool Decrypt(string path, int columnNumber, int[] key, string outputPath = "decrypt.txt");
+
         //private static int m = alphabet.Length;
         private static List<char[]> ToTableLineByLine(string path, int columnNumber)
         {
@@ -181,8 +182,8 @@ namespace LB2_Cryptography
             return (false, left);
         }
 
-        public static int[] HackColumnarTranspositionCipher(string path, string dictionaryPath, double match = 0.4,
-            string outputPath = "decrypted.txt", int maxKeyLen = 50)
+        public static int[] HackCipher(string path, Decrypt decrypt, string dictionaryPath, 
+            double match = 0.4, string outputPath = "decrypted.txt", int maxKeyLen = 11)
         {
             bool compare(int val_1, int val_2)
             {
@@ -211,7 +212,7 @@ namespace LB2_Cryptography
                         Console.Write(key[i] + " ");
                     Console.WriteLine();
 
-                    Crypto.DecryptColumnarTranspositionCipher(path, keyLen, key);
+                    decrypt(path, keyLen, key, outputPath);
 
                     string decryptedLine, word;
                     double actualMatch = 0, wordCount = 0;
@@ -245,7 +246,7 @@ namespace LB2_Cryptography
                         
                         if (Console.ReadKey().KeyChar != 'y')
                         {
-                            Console.WriteLine("\nKey found, check decrypted.txt");
+                            Console.WriteLine("\nKey found, check " + outputPath);
                             return key;
                         }
                         else
@@ -320,13 +321,11 @@ namespace LB2_Cryptography
             return true;
         }
         public static bool EncryptColumnarTranspositionCipher(string path, int columnNumber,
-            int[] key, string outputPath = null)
+            int[] key, string outputPath = "crypted.txt")
         {
             if (!Crypto.CheckBlockTranspositionCipherKey(columnNumber, key))
                 return false;
 
-            if (outputPath == null)
-                outputPath = "crypted.txt";
             StreamWriter output = new StreamWriter(outputPath, false, Encoding.UTF8);
 
             List<char[]> strings = Crypto.ToTableLineByLine(path, columnNumber);
@@ -351,14 +350,15 @@ namespace LB2_Cryptography
 
         public static bool CryptKeyTranspositionCipher(string path, int blockLen, int[] key)
         {
-            return KeyTranspositionCipher(path, "crypted.txt", blockLen, key);
+            return KeyTranspositionCipher(path, blockLen, key);
         }
 
-        public static bool DecryptKeyTranspositionCipher(string path, int blockLen, int[] key)
+        public static bool DecryptKeyTranspositionCipher(string path, int blockLen, int[] key, 
+            string outputPath = "decrypted.txt")
         {
-            return KeyTranspositionCipher(path, "decrypted.txt", blockLen, key);
+            return KeyTranspositionCipher(path, blockLen, key, outputPath);
         }
-        private static bool KeyTranspositionCipher(string path, string outputPath, int blockLen, int[] key)
+        private static bool KeyTranspositionCipher(string path, int blockLen, int[] key, string outputPath = "crypted.txt")
         {
 
             if (!Crypto.CheckBlockTranspositionCipherKey(blockLen, key))
@@ -367,10 +367,8 @@ namespace LB2_Cryptography
             StreamReader input = new StreamReader(path, Encoding.UTF8);
             StreamWriter output = new StreamWriter(outputPath, false, Encoding.UTF8);
 
-            string sourceLine, sourceText = "";
-            while ((sourceLine = input.ReadLine()) != null)
-                sourceText += sourceLine ?? "";
-
+            string sourceText = input.ReadToEnd();
+            
             string sourceBlock = "", outputBlock;
             int sourceBlockI = 0;
             for (int i = 0; i < sourceText.Length; i++)
