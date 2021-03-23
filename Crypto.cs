@@ -182,8 +182,8 @@ namespace LB2_Cryptography
             return (false, left);
         }
 
-        public static int[] HackCipher(string path, Decrypt decrypt, string dictionaryPath, 
-            double match = 0.4, string outputPath = "decrypted.txt", int maxKeyLen = 11)
+        public static int[] HackCipher(string path, Decrypt decrypt, string dictionaryPath,
+            double match = 0.4, int startKeyLen = 2, int[] startKey = null, string outputPath = "decrypted.txt", int maxKeyLen = 11)
         {
             bool compare(int val_1, int val_2)
             {
@@ -199,22 +199,23 @@ namespace LB2_Cryptography
             string[] dictionary = ToWords(dictionaryPath);
             
 
-            for (int keyLen = 2; keyLen <= maxKeyLen; keyLen++)
+            for (int keyLen = startKeyLen; keyLen <= maxKeyLen; keyLen++)
             {
-                key = new int[keyLen];
-                for (int i = 0; i < keyLen; i++)
-                    key[i] = i + 1;
+                if (keyLen == startKeyLen && startKey != null)
+                    key = startKey;
+                else
+                {
+                    key = new int[keyLen];
+                    for (int i = 0; i < keyLen; i++)
+                        key[i] = i + 1;
+                }
 
                 do
                 {
-                    Console.Write("Checking key: ");
-                    for (int i = 0; i < key.Length; i++)
-                        Console.Write(key[i] + " ");
-                    Console.WriteLine();
-
+               
                     decrypt(path, keyLen, key, outputPath);
 
-                    string decryptedLine, word;
+                    string decryptedLine, word, banned = ",. _";
                     double actualMatch = 0, wordCount = 0;
                     decrypted = new StreamReader(outputPath, Encoding.UTF8);
                     while ((decryptedLine = decrypted.ReadLine()) != null)
@@ -223,7 +224,13 @@ namespace LB2_Cryptography
                         for (int i = 0; i < decryptedLine.Length; i++)
                         {
                             word = "";
-                            while (i < decryptedLine.Length && decryptedLine[i] != ' ')
+                            while (i < decryptedLine.Length && banned.Contains(decryptedLine[i]))
+                                i++;
+
+                            if (i == decryptedLine.Length)
+                                continue;
+
+                            while (i < decryptedLine.Length && !banned.Contains(decryptedLine[i]))
                             {
                                 word += decryptedLine[i];
                                 i++;
@@ -235,27 +242,34 @@ namespace LB2_Cryptography
                         }
                     }
                     actualMatch /= wordCount ;
-                    decrypted.Close();
+                    
 
                     if (actualMatch >= match)
                     {
+                        //decrypted.BaseStream.Position = 0;
+                       // Console.WriteLine("\ndecrypted text: \n" + decrypted.ReadLine() + "...\n");
                         Console.WriteLine("Key:");
                         for (int i = 0; i < key.Length; i++)
                             Console.Write(key[i] + " ");
+                        Console.WriteLine("  match: " + actualMatch + "\n");
+
                         Console.WriteLine("Press 'y' to continue");
-                        
+
                         if (Console.ReadKey().KeyChar != 'y')
                         {
                             Console.WriteLine("\nKey found, check " + outputPath);
+                            decrypted.Close();
                             return key;
                         }
                         else
                             Console.WriteLine("\nContinue...");
-                            
+
+
                     }
                     else
                         actualMatch = 0;
 
+                    decrypted.Close();
                 } while (Narayana.NextPermutation<int>(key, compare));
 
             }
@@ -367,50 +381,57 @@ namespace LB2_Cryptography
             StreamReader input = new StreamReader(path, Encoding.UTF8);
             StreamWriter output = new StreamWriter(outputPath, false, Encoding.UTF8);
 
-            string sourceText = input.ReadToEnd();
+            string sourceLine;
             
             string sourceBlock = "", outputBlock;
             int sourceBlockI = 0;
-            for (int i = 0; i < sourceText.Length; i++)
+
+            while ((sourceLine = input.ReadLine()) != null)
             {
+                for (int i = 0; i < sourceLine.Length; i++)
+                {
+                    if (sourceBlockI < blockLen)
+                    {
+                        if (alphabet.Contains(sourceLine[i]))
+                        {
+                            sourceBlock += sourceLine[i];
+                            sourceBlockI++;
+                        }
+                    }
+                    else
+                    {
+                        outputBlock = "";
+                        for (int j = 0; j < blockLen; j++)
+                        {
+                            outputBlock += sourceBlock[key[j] - 1];
+                        }
+
+                        output.Write(outputBlock);
+
+                        sourceBlockI = 0;
+                        sourceBlock = "";
+                        i--;
+                    }
+                }
+
                 if (sourceBlockI < blockLen)
                 {
-                    if (alphabet.Contains(sourceText[i]))
+                    for (; sourceBlockI < blockLen; sourceBlockI++)
                     {
-                        sourceBlock += sourceText[i];
-                        sourceBlockI++;
+                        sourceBlock += " ";
                     }
                 }
-                else
+
+                outputBlock = "";
+                for (int j = 0; j < blockLen; j++)
                 {
-                    outputBlock = "";
-                    for (int j = 0; j < blockLen; j++)
-                    {
-                        outputBlock += sourceBlock[key[j] - 1];
-                    }
-
-                    output.Write(outputBlock);
-
-                    sourceBlockI = 0;
-                    sourceBlock = "";
-                    i--;
+                    outputBlock += sourceBlock[key[j] - 1];
                 }
+                output.Write(outputBlock);
+                sourceBlockI = 0;
+                sourceBlock = "";
             }
-
-            if (sourceBlockI < blockLen)
-            {
-                for (; sourceBlockI < blockLen; sourceBlockI++)
-                {
-                    sourceBlock += ".";
-                }
-            }
-
-            outputBlock = "";
-            for (int j = 0; j < blockLen; j++)
-            {
-                outputBlock += sourceBlock[key[j] - 1];
-            }
-            output.Write(outputBlock);
+            
 
             input.Close();
             output.Close();
